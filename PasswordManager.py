@@ -118,7 +118,7 @@ class PasswordManager:
         except psycopg2.errors as e:
             print(f"Oops something went wrong. Errors: {e}")
 
-    def delete_password(self,site_name, username):
+    def delete_password(self, site_name, username):
         try:
             site_id = self.get_site_id(site_name)[0][0]
             sql = "delete from passwords where site_id = %s and username = %s"
