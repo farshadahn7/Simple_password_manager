@@ -108,5 +108,30 @@ class PasswordManager:
         except psycopg2.errors as e:
             print(f"Oops something went wrong. Errors: {e}")
 
+    def get_all(self):
+        try:
+            sql = "select site_name, username, password_hash from passwords inner join site on site_id = site.id"
+            cursor = self.get_cursor()
+            cursor.execute(sql)
+            query = cursor.fetchall()
+            return query
+        except psycopg2.errors as e:
+            print(f"Oops something went wrong. Errors: {e}")
+
+    def delete_password(self,site_name, username):
+        try:
+            site_id = self.get_site_id(site_name)[0][0]
+            sql = "delete from passwords where site_id = %s and username = %s"
+            data = (site_id, username)
+            cursor = self.get_cursor()
+            cursor.execute(sql, data)
+            self.conn.commit()
+            print("Deleted successfully")
+        except IndexError:
+            print(f"{site_name} does not exists.")
+            self.conn.rollback()
+        except psycopg2.errors as e:
+            print(f"Oops something went wrong. Errors: {e}")
+
     def close(self):
         self.conn.close()
