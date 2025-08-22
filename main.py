@@ -59,4 +59,5 @@ if __name__ == "__main__":
             print(pm.get_all())
         elif user_inp.lower() == "n":
             print("Bye. have fun.")
+            pm.close()
             break
