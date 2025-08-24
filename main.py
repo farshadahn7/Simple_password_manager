@@ -1,8 +1,11 @@
 from PasswordManager import PasswordManager
 from settings import db_connection_data
+from my_key import get_key
 
 if __name__ == "__main__":
-    pm = PasswordManager(**db_connection_data)
+    encrypt_key = get_key()
+    data = {**db_connection_data, "encrypt_key": encrypt_key}
+    pm = PasswordManager(**data)
 
     while True:
         user_inp = input(
@@ -30,7 +33,7 @@ if __name__ == "__main__":
                 elif user_ans.lower() == "u":
                     site_name = input("In which site you want to change the username?")
                     print(f"**********All users of {site_name}**********")
-                    print(pm.get_password(site_name))
+                    print(pm.get_password(site_name)[:][:2])
                     print("*" * 35)
                     old_username = input("tell me the old username:")
                     new_username = input("tell me the new username:")
@@ -39,7 +42,7 @@ if __name__ == "__main__":
                 elif user_ans.lower() == "p":
                     site_name = input("In which site you want to change the password?")
                     print(f"**********All users of {site_name}**********")
-                    print(pm.get_password(site_name))
+                    print(pm.get_password(site_name)[:][0:2])
                     print("*" * 35)
                     username = input("Which username you want to change the password:")
                     new_password = input("tell me the new password:")
@@ -50,7 +53,7 @@ if __name__ == "__main__":
             username = input("which username you want to delete?")
             pm.delete_password(site_name, username)
             print(f"**********All users of {site_name}**********")
-            print(pm.get_password(site_name))
+            print(pm.get_password(site_name)[0][:2])
             print("*" * 35)
         elif user_inp == "4":
             site_name = input("which sites password you want to see?")

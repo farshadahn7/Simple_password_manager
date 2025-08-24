@@ -1,13 +1,22 @@
 from db.db_connection import connect_db
 import psycopg2
-
+from cryptography.fernet import Fernet
 
 class PasswordManager:
-    def __init__(self, db_name, db_user, db_pass, db_host, db_port):
+    def __init__(self, db_name, db_user, db_pass, db_host, db_port, encrypt_key):
         self.conn = connect_db(db_name, db_user, db_pass, db_host, db_port)
-
+        self.cipher_suite = Fernet(encrypt_key)
     def get_cursor(self):
         return self.conn.cursor()
+
+    def _encrypt_password(self, password):
+        cipher_pass = self.cipher_suite.encrypt(password.encode("utf-8"))
+        return cipher_pass.decode("utf-8")
+
+    def _decrypt_password(self, password):
+        password_bytes = password.encode("utf-8")
+        plain_pass = self.cipher_suite.decrypt(password_bytes)
+        return plain_pass.decode()
 
     def create_password(self, site_name, username, password):
         try:
@@ -22,7 +31,8 @@ class PasswordManager:
                 print(f"opps something went wrong. errors:{e}")
                 self.conn.rollback()
             sql = "insert into passwords (site_id,username,password_hash) values (%s,%s,%s)"
-            data = (site_id, username, password)
+            password_hash = self._encrypt_password(password)
+            data = (site_id, username, password_hash)
             self.execute_sql(sql=sql,data=data,commit=True)
 
             print("Data insertion completed successfully.")
@@ -52,7 +62,8 @@ class PasswordManager:
         try:
             site_id = self.get_site_id(site_name)[0][0]
             sql = "update passwords set password_hash = %s where site_id = %s and username = %s"
-            data = (password, site_id, username)
+            password_hash = self._encrypt_password(password)
+            data = (password_hash, site_id, username)
             self.execute_sql(sql=sql,data=data,commit=True)
             print("Password updated_successfully")
         except IndexError:
@@ -87,7 +98,11 @@ class PasswordManager:
             sql = "select site_name, username, password_hash from passwords inner join site on site_id = site.id where site_id = %s"
             data = (site_id,)
             query = self.execute_sql(sql=sql,data=data,fetchall=True)
-            return query
+            query_data = []
+            for site_name,username,password_hash in query:
+                query_data.append((site_name,username,self._decrypt_password(password_hash)))
+
+            return query_data
         except IndexError:
             print(f"{site_name} does not exists.")
             self.conn.rollback()
@@ -98,7 +113,10 @@ class PasswordManager:
         try:
             sql = "select site_name, username, password_hash from passwords inner join site on site_id = site.id"
             query = self.execute_sql(sql=sql, fetchall=True)
-            return query
+            query_data = []
+            for site_name,username,password_hash in query:
+                query_data.append((site_name,username,self._decrypt_password(password_hash)))
+            return query_data
         except psycopg2.errors as e:
             print(f"Oops something went wrong. Errors: {e}")
 

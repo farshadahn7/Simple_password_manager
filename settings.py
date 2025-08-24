@@ -1,5 +1,6 @@
 from decouple import config
 
+
 db_connection_data = {
     "db_name": config("DB_NAME"),
     "db_user": config("DB_USER"),
